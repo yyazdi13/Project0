@@ -1,5 +1,6 @@
 package Cli
 import scala.io.StdIn
+import java.io.File
 
 class Start {
   // give our menu loop a condition to start/stop on
@@ -31,7 +32,8 @@ class Start {
 
           input match {
             case "1" => {
-              println("you chose 1 \n")
+              println("Here's a list of books to choose from: \n")
+              FileUtil.getText("test.txt")
             }
             case "2" => {
               println("you chose 2 \n")
