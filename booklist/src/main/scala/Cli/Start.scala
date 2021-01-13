@@ -33,7 +33,8 @@ class Start {
           input match {
             case "1" => {
               println("Here's a list of books to choose from: \n")
-              FileUtil.getText("test.txt")
+              var books = FileUtil.getText("books.json")
+              .foreach((m : String) => (println(m.replace("\"", ""))))
             }
             case "2" => {
               println("you chose 2 \n")
