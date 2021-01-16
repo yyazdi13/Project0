@@ -1,6 +1,7 @@
 package Cli
 import scala.io.StdIn
 import java.io.File
+import Cli.Utils.ConnectionUtil
 
 class Start {
   // give our menu loop a condition to start/stop on
@@ -25,25 +26,43 @@ class Start {
   def menu() : Unit = {
       greeting();
 
+      //while our menu loop is on, continue
       while (on){
           println("please put in a number corresponding to the options below:")
           options();
           val input = StdIn.readLine() 
 
           input match {
+            //uses the getText method from FileUtil to format the String from our array and print it
             case "1" => {
               println("Here's a list of books to choose from: \n")
               var books = FileUtil.getText("books.json")
-              .foreach((m : String) => (println(m.replace("\"", ""))))
+              .foreach((m : String) => (
+                if (m.contains("author")){
+                println(m.replace("\"", "").trim())
+                } else {
+                  println(m.replace("\"", "").trim() + "\n")
+
+                }
+                ))
             }
             case "2" => {
-              println("you chose 2 \n")
+              var conn = ConnectionUtil.getConnection()
+              var statement = conn.prepareStatement("SELECT * FROM book;")
+              statement.execute()
+              val rs = statement.getResultSet()
+              while (rs.next()) println(rs.getString("title"))
+              println("author name?")
+              var author = StdIn.readLine()
+              println("title name?")
+              var title = StdIn.readLine()
+              println(s"$title by $author")
             }
             case "6" => {
                 on = false;
             }
             case _ => {
-              println("please pick a valid number from the list:")
+              println("please pick a valid number from the list:" + "\n")
             }
           }
         }
