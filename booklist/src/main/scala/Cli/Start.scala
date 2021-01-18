@@ -2,19 +2,21 @@ package Cli
 import scala.io.StdIn
 import java.io.File
 import Cli.Utils.ConnectionUtil
+import scala.collection.mutable.ArrayBuffer
+import java.sql.PreparedStatement
 
 class Start {
   // give our menu loop a condition to start/stop on
-  var on : Boolean = true;
+  var on: Boolean = true;
 
   // prints greeting message
-  def greeting() : Unit = {
-      println("Welcome to Book List!")
-      println("Select an option below:")
+  def greeting(): Unit = {
+    println("Welcome to Book List!")
+    println("Select an option below:")
   }
 
   // prints user options
-  def options() : Unit = {
+  def options(): Unit = {
     println("[1] Browse Books") // reads file with list of books
     println("[2] Save book") // saves a book into the DB
     println("[3] View saved books") // reads the DB to show us our saved books
@@ -23,49 +25,167 @@ class Start {
     println("[6] exits the CLI") // stops the while loop
   }
 
-  def menu() : Unit = {
-      greeting();
+  def menu(): Unit = {
+    greeting();
 
-      //while our menu loop is on, continue
-      while (on){
-          println("please put in a number corresponding to the options below:")
-          options();
-          val input = StdIn.readLine() 
+    //while our menu loop is on, continue
+    while (on) {
+      var conn = ConnectionUtil.getConnection()
+      println("please put in a number corresponding to the options below:")
+      options();
+      val input = StdIn.readLine()
 
-          input match {
-            //uses the getText method from FileUtil to format the String from our array and print it
-            case "1" => {
-              println("Here's a list of books to choose from: \n")
-              var books = FileUtil.getText("books.json")
-              .foreach((m : String) => (
-                if (m.contains("author")){
-                println(m.replace("\"", "").trim())
-                } else {
-                  println(m.replace("\"", "").trim() + "\n")
+      input match {
+        //uses the getText method from FileUtil print out our arrayBuffer and give each line a number
+        case "1" => {
+          println("Here's a list of books to choose from: \n")
+          var i: Int = 0;
+          var j: Int = 1;
+          var books = FileUtil.getText("books.json")
+          books.foreach((m: String) =>
+            (
+              if (m.contains("author")) {
+                println(s"$i) " + m)
+                i += 2;
+              } else {
+                println(s"$j) " + m + "\n")
+                j += 2
+              }
+            )
+          )
+        }
+        case "2" => {
+          var books = FileUtil.getText("books.json")
 
-                }
-                ))
+          try {
+            println("please put in author number")
+            var authorInput = StdIn.readInt()
+            println("title number?")
+            var titleInput = StdIn.readInt()
+
+            //make substrings to extract relevant info
+            var book = FileUtil.getBookFromList(books, authorInput, titleInput)
+            var author =
+              book.substring(book.indexOf(" "), book.indexOf(("title"))).trim()
+            var authorFirst : String = " ";
+            var authorLast : String = " ";
+            
+            // in case the author only has one name, e.g 'homer', we'll set it to both their first and last name
+            if (author.indexOf(" ") != -1) {
+              authorFirst = author.substring(0, author.indexOf(" "))
+              authorLast = author.substring(author.indexOf(" "))
             }
-            case "2" => {
-              var conn = ConnectionUtil.getConnection()
-              var statement = conn.prepareStatement("SELECT * FROM book;")
+            else {
+              authorFirst = author 
+              authorLast = author
+            }
+            var title = book.substring(book.indexOf("title:") + 6).trim()
+            var authorId: Int = -1;
+
+            // if we have a that author in our DB already, we can us it's author_id. Otherwise we create a new author
+            while (authorId < 0) {
+              var statement = conn.prepareStatement(
+                "SELECT * FROM author WHERE first_name = ?;"
+              )
+              statement.setString(1, authorFirst)
               statement.execute()
               val rs = statement.getResultSet()
-              while (rs.next()) println(rs.getString("title"))
-              println("author name?")
-              var author = StdIn.readLine()
-              println("title name?")
-              var title = StdIn.readLine()
-              println(s"$title by $author")
+              while (rs.next()) authorId = rs.getInt("author_id")
+              // if no author id is found for the author we've searched for, then we'll create a new one
+              if (authorId < 0) {
+                var authorStatement = conn.prepareStatement(
+                  "INSERT INTO author VALUES (DEFAULT, ?, ?);"
+                )
+                authorStatement.setString(1, authorFirst)
+                authorStatement.setString(2, authorLast)
+                authorStatement.execute()
+              }
             }
-            case "6" => {
-                on = false;
+            // once we have our author id, we can insert our book to the bookList table
+            var bookStatement = conn.prepareStatement(
+              "INSERT INTO bookList VALUES (DEFAULT, ?, ?);"
+            )
+            bookStatement.setString(1, title)
+            bookStatement.setInt(2, authorId)
+            bookStatement.execute()
+            println("successfully added book to booklist!" + "\n")
+          } catch {
+            // this happens when you put in something other than a number for author and title
+            case ne: NumberFormatException => {
+              println(
+                "pleas try again using valid numbers corresponding to the book list" + "\n"
+              )
             }
-            case _ => {
-              println("please pick a valid number from the list:" + "\n")
+            // this exception occurs if you've switched the author and title numbers, since author nums are even and title nums are odd
+            case oob: IndexOutOfBoundsException => {
+              println("make sure author and title are in correct order")
             }
           }
         }
-        println("goodbye!")
+        case "3" => {
+          println("List of saved books:" + "\n")
+          // use inner join to show our bookList along with their authors from the author table
+          var statement = conn.prepareStatement(
+            "select title, first_name, last_name from bookList b inner join author a on b.author_id = a.author_id;"
+          )
+          statement.execute()
+          var rs = statement.getResultSet()
+          //prints columns from our result set
+          while (rs.next()) {
+            println("book title: " + rs.getString(1))
+            println("Author first name: " + rs.getString(2))
+            println("Author last name: " + rs.getString(3) + "\n")
+          }
+        }
+        case "4" => {
+          try {
+            println("delete book")
+            println("title?")
+            var title = StdIn
+              .readLine()
+              .toLowerCase
+              .split(' ')
+              .map(x => if (x.length > 3) x.capitalize else x)
+              .mkString(" ")
+            println(title)
+            println("Author's first name?")
+            var firstName = StdIn.readLine().toLowerCase().capitalize.trim()
+            println("Author's last name?")
+            var lastName = StdIn.readLine().toLowerCase().capitalize.trim()
+            var statement = conn.prepareStatement(
+              "SELECT * FROM author where first_name = ? AND last_name = ?;"
+            )
+            statement.setString(1, firstName)
+            statement.setString(2, lastName)
+            statement.execute()
+            var rs = statement.getResultSet()
+            var authorId: Int = -1;
+            while (rs.next()) authorId = rs.getInt("author_id")
+            println(title)
+            println(authorId)
+            var bookStatement = conn.prepareStatement(
+              ("DELETE from bookList where title = ? AND author_id = ?")
+            )
+            bookStatement.setString(1, title)
+            bookStatement.setInt(2, authorId)
+            bookStatement.execute()
+            println("successfully deleted book")
+          } catch {
+            case e: Exception => {
+              println("SQL error:")
+              e.printStackTrace()
+            }
+          }
+        }
+        case "6" => {
+          conn.close()
+          on = false;
+        }
+        case _ => {
+          println("please pick a valid number from the list:" + "\n")
+        }
+      }
     }
+    println("goodbye!")
+  }
 }
