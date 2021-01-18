@@ -69,11 +69,10 @@ class Start {
               book.substring(book.indexOf(" "), book.indexOf(("title"))).trim()
             var authorFirst : String = " ";
             var authorLast : String = " ";
-            
             // in case the author only has one name, e.g 'homer', we'll set it to both their first and last name
             if (author.indexOf(" ") != -1) {
-              authorFirst = author.substring(0, author.indexOf(" "))
-              authorLast = author.substring(author.indexOf(" "))
+              authorFirst = author.substring(0, author.indexOf(" ")).trim()
+              authorLast = author.substring(author.indexOf(" ")).trim()
             }
             else {
               authorFirst = author 
@@ -146,8 +145,7 @@ class Start {
               .toLowerCase
               .split(' ')
               .map(x => if (x.length > 3) x.capitalize else x)
-              .mkString(" ")
-            println(title)
+              .mkString(" ").capitalize
             println("Author's first name?")
             var firstName = StdIn.readLine().toLowerCase().capitalize.trim()
             println("Author's last name?")
@@ -161,19 +159,70 @@ class Start {
             var rs = statement.getResultSet()
             var authorId: Int = -1;
             while (rs.next()) authorId = rs.getInt("author_id")
+            println(rs.getStatement())
             println(title)
             println(authorId)
+            println(firstName)
+            println(lastName)
             var bookStatement = conn.prepareStatement(
               ("DELETE from bookList where title = ? AND author_id = ?")
             )
             bookStatement.setString(1, title)
             bookStatement.setInt(2, authorId)
             bookStatement.execute()
-            println("successfully deleted book")
+            if (bookStatement.getUpdateCount() > 0) println("successfully deleted book")
+            else println("book not recognized")
           } catch {
             case e: Exception => {
               println("SQL error:")
               e.printStackTrace()
+            }
+          }
+        }
+        case "5" => {
+          println("update a book:")
+          println("what would you like to update (author or title)?")
+          var updateInput = StdIn.readLine().trim().toLowerCase()
+          updateInput match {
+            case "title" => {
+              println("what's the title's name?")
+              var title = StdIn.readLine().toLowerCase
+              .split(' ')
+              .map(x => if (x.length > 3) x.capitalize else x)
+              .mkString(" ").capitalize
+
+              println("what would you like to change it to?")
+              var newTitle = StdIn.readLine().toLowerCase
+              .split(' ')
+              .map(x => if (x.length > 3) x.capitalize else x)
+              .mkString(" ").capitalize
+              var statement = conn.prepareStatement("UPDATE bookList SET title = ? WHERE title = ?;")
+              statement.setString(1, newTitle)
+              statement.setString(2, title)
+              statement.execute()
+              if (statement.getUpdateCount() > 0) println("updated rows: " + statement.getUpdateCount())
+              else println("title not recognized")
+            }
+            case "author" => {
+              println("what's the author's first name?")
+              var firstName = StdIn.readLine().trim().capitalize
+              println("last name?")
+              var lastName = StdIn.readLine().trim().capitalize
+              println("what would you like their new first name to be?")
+              var changedFirstName = StdIn.readLine().trim().capitalize
+              println("new last name?")
+              var changedLastName = StdIn.readLine().trim().capitalize
+              var updateStatment = conn.prepareStatement("UPDATE author SET first_name = ?, last_name = ? WHERE first_name = ? AND last_name = ?;")
+              updateStatment.setString(3, firstName)
+              updateStatment.setString(4, lastName)
+              updateStatment.setString(1, changedFirstName)
+              updateStatment.setString(2, changedLastName)
+              updateStatment.execute()
+              if (updateStatment.getUpdateCount() > 0) println("rows changed: " + updateStatment.getUpdateCount())
+              else println("Fail: author not recognized" + "\n")
+            }
+            case _ => {
+              println("you must type either author or title" + "\n")
             }
           }
         }
