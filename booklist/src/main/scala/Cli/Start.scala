@@ -1,9 +1,10 @@
 package Cli
 import scala.io.StdIn
 import java.io.File
-import Cli.Utils.ConnectionUtil
+import Cli.Utils.FileUtil
 import scala.collection.mutable.ArrayBuffer
 import java.sql.PreparedStatement
+import Cli.daos.BookDao
 
 class Start {
   // give our menu loop a condition to start/stop on
@@ -30,7 +31,6 @@ class Start {
 
     //while our menu loop is on, continue
     while (on) {
-      var conn = ConnectionUtil.getConnection()
       println("please put in a number corresponding to the options below:")
       options();
       val input = StdIn.readLine()
@@ -79,35 +79,8 @@ class Start {
               authorLast = author
             }
             var title = book.substring(book.indexOf("title:") + 6).trim()
-            var authorId: Int = -1;
-
-            // if we have a that author in our DB already, we can us it's author_id. Otherwise we create a new author
-            while (authorId < 0) {
-              var statement = conn.prepareStatement(
-                "SELECT * FROM author WHERE first_name = ?;"
-              )
-              statement.setString(1, authorFirst)
-              statement.execute()
-              val rs = statement.getResultSet()
-              while (rs.next()) authorId = rs.getInt("author_id")
-              // if no author id is found for the author we've searched for, then we'll create a new one
-              if (authorId < 0) {
-                var authorStatement = conn.prepareStatement(
-                  "INSERT INTO author VALUES (DEFAULT, ?, ?);"
-                )
-                authorStatement.setString(1, authorFirst)
-                authorStatement.setString(2, authorLast)
-                authorStatement.execute()
-              }
-            }
-            // once we have our author id, we can insert our book to the bookList table
-            var bookStatement = conn.prepareStatement(
-              "INSERT INTO bookList VALUES (DEFAULT, ?, ?);"
-            )
-            bookStatement.setString(1, title)
-            bookStatement.setInt(2, authorId)
-            bookStatement.execute()
-            println("successfully added book to booklist!" + "\n")
+            BookDao.insertBook(authorFirst, authorLast, title)
+            
           } catch {
             // this happens when you put in something other than a number for author and title
             case ne: NumberFormatException => {
@@ -122,23 +95,10 @@ class Start {
           }
         }
         case "3" => {
-          println("List of saved books:" + "\n")
-          // use inner join to show our bookList along with their authors from the author table
-          var statement = conn.prepareStatement(
-            "select title, first_name, last_name from bookList b inner join author a on b.author_id = a.author_id;"
-          )
-          statement.execute()
-          var rs = statement.getResultSet()
-          //prints columns from our result set
-          while (rs.next()) {
-            println("book title: " + rs.getString(1))
-            println("Author first name: " + rs.getString(2))
-            println("Author last name: " + rs.getString(3) + "\n")
-          }
+          BookDao.getAllBooks()
         }
         case "4" => {
-          try {
-            println("delete book")
+          println("delete book")
             println("title?")
             var title = StdIn
               .readLine()
@@ -150,34 +110,7 @@ class Start {
             var firstName = StdIn.readLine().toLowerCase().capitalize.trim()
             println("Author's last name?")
             var lastName = StdIn.readLine().toLowerCase().capitalize.trim()
-            var statement = conn.prepareStatement(
-              "SELECT * FROM author where first_name = ? AND last_name = ?;"
-            )
-            statement.setString(1, firstName)
-            statement.setString(2, lastName)
-            statement.execute()
-            var rs = statement.getResultSet()
-            var authorId: Int = -1;
-            while (rs.next()) authorId = rs.getInt("author_id")
-            println(rs.getStatement())
-            println(title)
-            println(authorId)
-            println(firstName)
-            println(lastName)
-            var bookStatement = conn.prepareStatement(
-              ("DELETE from bookList where title = ? AND author_id = ?")
-            )
-            bookStatement.setString(1, title)
-            bookStatement.setInt(2, authorId)
-            bookStatement.execute()
-            if (bookStatement.getUpdateCount() > 0) println("successfully deleted book")
-            else println("book not recognized")
-          } catch {
-            case e: Exception => {
-              println("SQL error:")
-              e.printStackTrace()
-            }
-          }
+          BookDao.deleteBook(firstName, lastName, title)
         }
         case "5" => {
           println("update a book:")
@@ -196,12 +129,7 @@ class Start {
               .split(' ')
               .map(x => if (x.length > 3) x.capitalize else x)
               .mkString(" ").capitalize
-              var statement = conn.prepareStatement("UPDATE bookList SET title = ? WHERE title = ?;")
-              statement.setString(1, newTitle)
-              statement.setString(2, title)
-              statement.execute()
-              if (statement.getUpdateCount() > 0) println("updated rows: " + statement.getUpdateCount())
-              else println("title not recognized")
+              BookDao.updateBookTitle(newTitle, title)
             }
             case "author" => {
               println("what's the author's first name?")
@@ -212,14 +140,7 @@ class Start {
               var changedFirstName = StdIn.readLine().trim().capitalize
               println("new last name?")
               var changedLastName = StdIn.readLine().trim().capitalize
-              var updateStatment = conn.prepareStatement("UPDATE author SET first_name = ?, last_name = ? WHERE first_name = ? AND last_name = ?;")
-              updateStatment.setString(3, firstName)
-              updateStatment.setString(4, lastName)
-              updateStatment.setString(1, changedFirstName)
-              updateStatment.setString(2, changedLastName)
-              updateStatment.execute()
-              if (updateStatment.getUpdateCount() > 0) println("rows changed: " + updateStatment.getUpdateCount())
-              else println("Fail: author not recognized" + "\n")
+              BookDao.updateAuthor(firstName, lastName, changedFirstName, changedLastName)
             }
             case _ => {
               println("you must type either author or title" + "\n")
@@ -227,7 +148,6 @@ class Start {
           }
         }
         case "6" => {
-          conn.close()
           on = false;
         }
         case _ => {
