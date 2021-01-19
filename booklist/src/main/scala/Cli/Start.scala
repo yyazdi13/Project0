@@ -67,20 +67,19 @@ class Start {
             var book = FileUtil.getBookFromList(books, authorInput, titleInput)
             var author =
               book.substring(book.indexOf(" "), book.indexOf(("title"))).trim()
-            var authorFirst : String = " ";
-            var authorLast : String = " ";
+            var authorFirst: String = " ";
+            var authorLast: String = " ";
             // in case the author only has one name, e.g 'homer', we'll set it to both their first and last name
             if (author.indexOf(" ") != -1) {
               authorFirst = author.substring(0, author.indexOf(" ")).trim()
               authorLast = author.substring(author.indexOf(" ")).trim()
-            }
-            else {
-              authorFirst = author 
+            } else {
+              authorFirst = author
               authorLast = author
             }
             var title = book.substring(book.indexOf("title:") + 6).trim()
             BookDao.insertBook(authorFirst, authorLast, title)
-            
+
           } catch {
             // this happens when you put in something other than a number for author and title
             case ne: NumberFormatException => {
@@ -99,36 +98,52 @@ class Start {
         }
         case "4" => {
           println("delete book")
-            println("title?")
-            var title = StdIn
-              .readLine()
-              .toLowerCase
-              .split(' ')
-              .map(x => if (x.length > 3) x.capitalize else x)
-              .mkString(" ").capitalize
-            println("Author's first name?")
-            var firstName = StdIn.readLine().toLowerCase().capitalize.trim()
-            println("Author's last name?")
-            var lastName = StdIn.readLine().toLowerCase().capitalize.trim()
+          println("title?")
+          // formatting input
+          var title = StdIn
+            .readLine()
+            .toLowerCase
+            .split(' ')
+            .map(x => if (x.length > 3) x.capitalize else x)
+            .mkString(" ")
+            .capitalize
+          println("Author's first name?")
+          var firstName = StdIn.readLine().toLowerCase().capitalize.trim()
+          println("Author's last name?")
+          var lastName = StdIn.readLine().toLowerCase().capitalize.trim()
+          // if the person has more than one last name, we want to capitalize every word
+          if (lastName.indexOf(" ") != -1)
+            lastName = lastName.split(' ').map(x => x.capitalize).mkString(" ")
+          //calls the delete query
           BookDao.deleteBook(firstName, lastName, title)
         }
         case "5" => {
           println("update a book:")
+          //can update either by author or title
           println("what would you like to update (author or title)?")
           var updateInput = StdIn.readLine().trim().toLowerCase()
           updateInput match {
             case "title" => {
+              //more input formatting
+              //trying to capitalize every word except prepositions/conjunctions (word length < 4)
+              //unless it's the first word
               println("what's the title's name?")
-              var title = StdIn.readLine().toLowerCase
-              .split(' ')
-              .map(x => if (x.length > 3) x.capitalize else x)
-              .mkString(" ").capitalize
+              var title = StdIn
+                .readLine()
+                .toLowerCase
+                .split(' ')
+                .map(x => if (x.length > 3) x.capitalize else x)
+                .mkString(" ")
+                .capitalize
 
               println("what would you like to change it to?")
-              var newTitle = StdIn.readLine().toLowerCase
-              .split(' ')
-              .map(x => if (x.length > 3) x.capitalize else x)
-              .mkString(" ").capitalize
+              var newTitle = StdIn
+                .readLine()
+                .toLowerCase
+                .split(' ')
+                .map(x => if (x.length > 3) x.capitalize else x)
+                .mkString(" ")
+                .capitalize
               BookDao.updateBookTitle(newTitle, title)
             }
             case "author" => {
@@ -140,21 +155,36 @@ class Start {
               var changedFirstName = StdIn.readLine().trim().capitalize
               println("new last name?")
               var changedLastName = StdIn.readLine().trim().capitalize
-              BookDao.updateAuthor(firstName, lastName, changedFirstName, changedLastName)
+              // if they have more than one last name, capitalize every word
+              if (changedLastName.indexOf(" ") != -1)
+                changedLastName = changedLastName
+                  .split(' ')
+                  .map(x => x.capitalize)
+                  .mkString(" ")
+              BookDao.updateAuthor(
+                firstName,
+                lastName,
+                changedFirstName,
+                changedLastName
+              )
             }
             case _ => {
+              //if they enter something other than 'title' or 'author:'
               println("you must type either author or title" + "\n")
             }
           }
         }
         case "6" => {
+          //we stop the loop and exit the cli
           on = false;
         }
         case _ => {
+          //if they pick anyhting other than an number 1-6:
           println("please pick a valid number from the list:" + "\n")
         }
       }
     }
+    //after we exit our loop we print a goodbye message
     println("goodbye!")
   }
 }
