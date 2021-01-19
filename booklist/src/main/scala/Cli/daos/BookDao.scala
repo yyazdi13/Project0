@@ -7,7 +7,7 @@ object BookDao {
   def getAllBooks(): Unit = {
     val conn = ConnectionUtil.getConnection()
     try {
-      println("List of saved books:" + "\n")
+      println(Console.BLUE + "List of saved books:" + "\n")
       // use inner join to show our bookList along with their authors from the author table
       var statement = conn.prepareStatement(
         "select title, first_name, last_name from bookList b inner join author a on b.author_id = a.author_id;"
@@ -22,7 +22,7 @@ object BookDao {
       }
     } catch {
       case e: Exception => {
-        println("SQL error:")
+        println(Console.RED + "SQL error:")
         e.printStackTrace()
       }
     } finally {
@@ -43,11 +43,6 @@ object BookDao {
       var rs = statement.getResultSet()
       var authorId: Int = -1;
       while (rs.next()) authorId = rs.getInt("author_id")
-      println(rs.getStatement())
-      println(title)
-      println(authorId)
-      println(firstName)
-      println(lastName)
       var bookStatement = conn.prepareStatement(
         ("DELETE from bookList where title = ? AND author_id = ?")
       )
@@ -55,11 +50,11 @@ object BookDao {
       bookStatement.setInt(2, authorId)
       bookStatement.execute()
       if (bookStatement.getUpdateCount() > 0)
-        println("successfully deleted book")
-      else println("book not recognized")
+        println(Console.GREEN + "successfully deleted book")
+      else println(Console.YELLOW + "book not recognized")
     } catch {
       case e: Exception => {
-        println("SQL error:")
+        println(Console.RED + "SQL error:")
         e.printStackTrace()
       }
     } finally {
@@ -101,10 +96,10 @@ object BookDao {
       bookStatement.setString(1, title)
       bookStatement.setInt(2, authorId)
       bookStatement.execute()
-      println("successfully added book to booklist!" + "\n")
+      println(Console.GREEN + "successfully added book to booklist!" + "\n")
     } catch {
       case e: Exception => {
-        println("SQL error:")
+        println(Console.RED + "SQL error:")
         e.printStackTrace()
       }
     } finally {
@@ -121,11 +116,11 @@ object BookDao {
       statement.setString(2, title)
       statement.execute()
       if (statement.getUpdateCount() > 0)
-        println("updated rows: " + statement.getUpdateCount())
-      else println("title not recognized")
+        println(Console.GREEN + "updated rows: " + statement.getUpdateCount())
+      else println(Console.YELLOW + "title not recognized: " + title)
     } catch {
       case e: Exception => {
-        println("SQL error:")
+        println(Console.RED + "SQL error:")
         e.printStackTrace()
       }
     } finally {
@@ -151,11 +146,11 @@ object BookDao {
       updateStatment.setString(2, changedLastName)
       updateStatment.execute()
       if (updateStatment.getUpdateCount() > 0)
-        println("rows changed: " + updateStatment.getUpdateCount())
-      else println("Fail: author not recognized" + "\n")
+        println(Console.GREEN + "rows changed: " + updateStatment.getUpdateCount())
+      else println(Console.YELLOW + "Fail: author not recognized" + "\n")
     } catch {
       case e: Exception => {
-        println("SQL error:")
+        println(Console.RED + "SQL error:")
         e.printStackTrace()
       }
     } finally {

@@ -9,10 +9,10 @@ import scala.collection.mutable.ArrayBuffer
 object FileUtil {
   // set a bufferdSource as null, this will be our file:
   var openFile: BufferedSource = null
-  // this is where our books from our file will be stored:
-  var list: ArrayBuffer[String] = new ArrayBuffer;
 
   def getText(filename: String): ArrayBuffer[String] = {
+    // this is where our books from our file will be stored:
+    var list: ArrayBuffer[String] = new ArrayBuffer;
 
     try {
       //set openFile equal to the file name in our parameter
@@ -27,7 +27,7 @@ object FileUtil {
       ) {
         list.addOne(book.replace("\"", "").trim().replace(",", ""))
       }
-      return list
+      list
 
     } catch {
       // if we get e file not found exception, we print the error message and our list, even if it's empty.
@@ -42,12 +42,12 @@ object FileUtil {
 
   // this gets a book's title and author at a given index
   def getBookFromList(
-      books: ArrayBuffer[String] = list,
+      books: ArrayBuffer[String],
       authorIndex: Int,
       titleIndex: Int
   ): String = {
     if (openFile != null) openFile.close()
-    return list(authorIndex) + " " + list(titleIndex)
+    return books(authorIndex) + " " + books(titleIndex)
 
   }
 

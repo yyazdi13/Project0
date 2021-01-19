@@ -13,7 +13,7 @@ class Start {
   // prints greeting message
   def greeting(): Unit = {
     println("Welcome to Book List!")
-    println("Select an option below:")
+    println(Console.CYAN + "Select an option below:")
   }
 
   // prints user options
@@ -31,14 +31,14 @@ class Start {
 
     //while our menu loop is on, continue
     while (on) {
-      println("please put in a number corresponding to the options below:")
+      println(Console.WHITE + "please put in a number corresponding to the options below:")
       options();
       val input = StdIn.readLine()
 
       input match {
         //uses the getText method from FileUtil print out our arrayBuffer and give each line a number
         case "1" => {
-          println("Here's a list of books to choose from: \n")
+          println(Console.BLUE + "Here's a list of books to choose from: \n")
           var i: Int = 0;
           var j: Int = 1;
           var books = FileUtil.getText("books.json")
@@ -75,7 +75,7 @@ class Start {
               authorLast = author.substring(author.indexOf(" ")).trim()
             } else {
               authorFirst = author
-              authorLast = author
+              authorLast = "";
             }
             var title = book.substring(book.indexOf("title:") + 6).trim()
             BookDao.insertBook(authorFirst, authorLast, title)
@@ -84,12 +84,12 @@ class Start {
             // this happens when you put in something other than a number for author and title
             case ne: NumberFormatException => {
               println(
-                "pleas try again using valid numbers corresponding to the book list" + "\n"
+                Console.YELLOW + "please try again using valid numbers corresponding to the book list" + "\n"
               )
             }
             // this exception occurs if you've switched the author and title numbers, since author nums are even and title nums are odd
             case oob: IndexOutOfBoundsException => {
-              println("make sure author and title are in correct order")
+              println(Console.YELLOW + "make sure author and title are in correct order")
             }
           }
         }
@@ -97,14 +97,14 @@ class Start {
           BookDao.getAllBooks()
         }
         case "4" => {
-          println("delete book")
+          println(Console.BLUE + "delete book")
           println("title?")
           // formatting input
           var title = StdIn
             .readLine()
             .toLowerCase
             .split(' ')
-            .map(x => if (x.length > 3) x.capitalize else x)
+            .map(x => if (x.length > 2 && x != "the" && x != "and") x.capitalize else x)
             .mkString(" ")
             .capitalize
           println("Author's first name?")
@@ -118,21 +118,21 @@ class Start {
           BookDao.deleteBook(firstName, lastName, title)
         }
         case "5" => {
-          println("update a book:")
+          println(Console.BLUE + "update a book:")
           //can update either by author or title
           println("what would you like to update (author or title)?")
           var updateInput = StdIn.readLine().trim().toLowerCase()
           updateInput match {
             case "title" => {
               //more input formatting
-              //trying to capitalize every word except prepositions/conjunctions (word length < 4)
+              //trying to capitalize every word except prepositions/conjunctions (word length < 3)
               //unless it's the first word
               println("what's the title's name?")
               var title = StdIn
                 .readLine()
                 .toLowerCase
                 .split(' ')
-                .map(x => if (x.length > 3) x.capitalize else x)
+                .map(x => if (x.length > 2 && x != "the" && x != "and") x.capitalize else x)
                 .mkString(" ")
                 .capitalize
 
@@ -141,7 +141,7 @@ class Start {
                 .readLine()
                 .toLowerCase
                 .split(' ')
-                .map(x => if (x.length > 3) x.capitalize else x)
+                .map(x => if (x.length > 2 && x != "the" && x != "and") x.capitalize else x)
                 .mkString(" ")
                 .capitalize
               BookDao.updateBookTitle(newTitle, title)
@@ -150,7 +150,7 @@ class Start {
               println("what's the author's first name?")
               var firstName = StdIn.readLine().trim().capitalize
               println("last name?")
-              var lastName = StdIn.readLine().trim().capitalize
+              var lastName = StdIn.readLine().trim().split(' ').map(x => x.capitalize).mkString(" ")
               println("what would you like their new first name to be?")
               var changedFirstName = StdIn.readLine().trim().capitalize
               println("new last name?")
@@ -170,7 +170,7 @@ class Start {
             }
             case _ => {
               //if they enter something other than 'title' or 'author:'
-              println("you must type either author or title" + "\n")
+              println(Console.YELLOW + "you must type either author or title" + "\n")
             }
           }
         }
@@ -180,7 +180,7 @@ class Start {
         }
         case _ => {
           //if they pick anyhting other than an number 1-6:
-          println("please pick a valid number from the list:" + "\n")
+          println(Console.YELLOW + "please pick a valid number from the list:" + "\n")
         }
       }
     }
