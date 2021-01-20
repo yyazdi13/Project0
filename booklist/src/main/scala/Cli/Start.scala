@@ -5,6 +5,7 @@ import Cli.Utils.FileUtil
 import scala.collection.mutable.ArrayBuffer
 import java.sql.PreparedStatement
 import Cli.daos.BookDao
+import Cli.Utils.FormatInput
 
 class Start {
   // give our menu loop a condition to start/stop on
@@ -13,7 +14,7 @@ class Start {
   // prints greeting message
   def greeting(): Unit = {
     println("Welcome to Book List!")
-    println(Console.CYAN + "Select an option below:")
+    println(Console.BLUE + "Select an option below:")
   }
 
   // prints user options
@@ -31,17 +32,20 @@ class Start {
 
     //while our menu loop is on, continue
     while (on) {
-      println(Console.WHITE + "please put in a number corresponding to the options below:")
+      println(
+        Console.WHITE + "please put in a number corresponding to the options below:"
+      )
       options();
       val input = StdIn.readLine()
 
       input match {
         //uses the getText method from FileUtil print out our arrayBuffer and give each line a number
         case "1" => {
-          println(Console.BLUE + "Here's a list of books to choose from: \n")
+          println(Console.CYAN + "Here's a list of books to choose from: \n")
           var i: Int = 0;
           var j: Int = 1;
           var books = FileUtil.getText("books.json")
+
           books.foreach((m: String) =>
             (
               if (m.contains("author")) {
@@ -60,6 +64,7 @@ class Start {
           try {
             println("please put in author number")
             var authorInput = StdIn.readInt()
+
             println("title number?")
             var titleInput = StdIn.readInt()
 
@@ -69,6 +74,7 @@ class Start {
               book.substring(book.indexOf(" "), book.indexOf(("title"))).trim()
             var authorFirst: String = " ";
             var authorLast: String = " ";
+
             // in case the author only has one name, e.g 'homer', we'll set it to both their first and last name
             if (author.indexOf(" ") != -1) {
               authorFirst = author.substring(0, author.indexOf(" ")).trim()
@@ -77,6 +83,7 @@ class Start {
               authorFirst = author
               authorLast = "";
             }
+
             var title = book.substring(book.indexOf("title:") + 6).trim()
             BookDao.insertBook(authorFirst, authorLast, title)
 
@@ -89,7 +96,9 @@ class Start {
             }
             // this exception occurs if you've switched the author and title numbers, since author nums are even and title nums are odd
             case oob: IndexOutOfBoundsException => {
-              println(Console.YELLOW + "make sure author and title are in correct order")
+              println(
+                Console.YELLOW + "make sure author and title are in correct order"
+              )
             }
           }
         }
@@ -100,20 +109,14 @@ class Start {
           println(Console.BLUE + "delete book")
           println("title?")
           // formatting input
-          var title = StdIn
-            .readLine()
-            .toLowerCase
-            .split(' ')
-            .map(x => if (x.length > 2 && x != "the" && x != "and") x.capitalize else x)
-            .mkString(" ")
-            .capitalize
+          var title = FormatInput.titleCase
+
           println("Author's first name?")
-          var firstName = StdIn.readLine().toLowerCase().capitalize.trim()
+          var firstName = FormatInput.capitalizeName
+
           println("Author's last name?")
-          var lastName = StdIn.readLine().toLowerCase().capitalize.trim()
-          // if the person has more than one last name, we want to capitalize every word
-          if (lastName.indexOf(" ") != -1)
-            lastName = lastName.split(' ').map(x => x.capitalize).mkString(" ")
+          var lastName = FormatInput.capitalizeName
+
           //calls the delete query
           BookDao.deleteBook(firstName, lastName, title)
         }
@@ -122,45 +125,30 @@ class Start {
           //can update either by author or title
           println("what would you like to update (author or title)?")
           var updateInput = StdIn.readLine().trim().toLowerCase()
+
           updateInput match {
             case "title" => {
-              //more input formatting
-              //trying to capitalize every word except prepositions/conjunctions (word length < 3)
-              //unless it's the first word
               println("what's the title's name?")
-              var title = StdIn
-                .readLine()
-                .toLowerCase
-                .split(' ')
-                .map(x => if (x.length > 2 && x != "the" && x != "and") x.capitalize else x)
-                .mkString(" ")
-                .capitalize
+              var title = FormatInput.titleCase
 
               println("what would you like to change it to?")
-              var newTitle = StdIn
-                .readLine()
-                .toLowerCase
-                .split(' ')
-                .map(x => if (x.length > 2 && x != "the" && x != "and") x.capitalize else x)
-                .mkString(" ")
-                .capitalize
+              var newTitle = FormatInput.titleCase
+
               BookDao.updateBookTitle(newTitle, title)
             }
             case "author" => {
               println("what's the author's first name?")
-              var firstName = StdIn.readLine().trim().capitalize
+              var firstName = FormatInput.capitalizeName
+
               println("last name?")
-              var lastName = StdIn.readLine().trim().split(' ').map(x => x.capitalize).mkString(" ")
+              var lastName = FormatInput.capitalizeName
+
               println("what would you like their new first name to be?")
-              var changedFirstName = StdIn.readLine().trim().capitalize
+              var changedFirstName = FormatInput.capitalizeName
+
               println("new last name?")
-              var changedLastName = StdIn.readLine().trim().capitalize
-              // if they have more than one last name, capitalize every word
-              if (changedLastName.indexOf(" ") != -1)
-                changedLastName = changedLastName
-                  .split(' ')
-                  .map(x => x.capitalize)
-                  .mkString(" ")
+              var changedLastName = FormatInput.capitalizeName
+
               BookDao.updateAuthor(
                 firstName,
                 lastName,
@@ -170,7 +158,9 @@ class Start {
             }
             case _ => {
               //if they enter something other than 'title' or 'author:'
-              println(Console.YELLOW + "you must type either author or title" + "\n")
+              println(
+                Console.YELLOW + "you must type either author or title" + "\n"
+              )
             }
           }
         }
@@ -180,7 +170,9 @@ class Start {
         }
         case _ => {
           //if they pick anyhting other than an number 1-6:
-          println(Console.YELLOW + "please pick a valid number from the list:" + "\n")
+          println(
+            Console.YELLOW + "please pick a valid number from the list:" + "\n"
+          )
         }
       }
     }
